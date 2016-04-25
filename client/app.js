@@ -16,6 +16,20 @@
     });
   };
 
+  Graphics.npm.overview = function plot(anchor, all){
+    /*MG.data_graphic({
+          title: "Multi-Line Chart",
+          description: "This line chart contains multiple lines.",
+          data: data,
+          width: 600,
+          height: 200,
+          right: 40,
+          target: '#fake_users2',
+          legend: ['Line 1','Line 2','Line 3'],
+          legend_target: '.legend'
+      });*/
+  };
+
   var app = angular.module('app', ['ngMaterial']);
 
   app.factory('Npm', function($http){
