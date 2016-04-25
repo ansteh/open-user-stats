@@ -1,0 +1,26 @@
+{
+  "name": "open-user-stats",
+  "version": "0.0.0",
+  "description": "web service to get insight of a users open source projects",
+  "main": "index.js",
+  "scripts": {},
+  "engines": {
+    "node": ">=4"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ansteh/open-user-stats.git"
+  },
+  "keywords": [
+    "web service"
+  ],
+  "author": "Andre Stehle",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/ansteh/open-user-stats/issues"
+  },
+  "dependencies": {
+    "express": "^4.13.4"
+  },
+  "devDependencies": {}
+}
