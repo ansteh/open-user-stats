@@ -47,6 +47,16 @@
       });
     };
 
+    function getModules(modules){
+      /*var files = [];
+      for (var i = 0; i < 100; ++i) {
+          files.push(fs.writeFileAsync("file-" + i + ".txt", "", "utf-8"));
+      }*/
+      Promise.all(downloads).then(function() {
+          console.log("all downloads requested!");
+      });
+    };
+
     return {
       downloads: downloads,
     };
