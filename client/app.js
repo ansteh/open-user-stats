@@ -33,8 +33,8 @@
   var app = angular.module('app', ['ngMaterial']);
 
   app.factory('Npm', function($http){
-    function downloads(name){
-      var url = 'https://api.npmjs.org/downloads/range/last-month/'+encodeURIComponent(name);
+
+    function get(url){
       return new Promise(function(resolve, reject){
         $http({
           method: 'GET',
@@ -47,22 +47,40 @@
       });
     };
 
-    function getModules(modules){
-      /*var files = [];
-      for (var i = 0; i < 100; ++i) {
-          files.push(fs.writeFileAsync("file-" + i + ".txt", "", "utf-8"));
-      }*/
-      Promise.all(downloads).then(function() {
-          console.log("all downloads requested!");
+    function fillZero(number){
+      return (number<10) ? '0'+number : number;
+    };
+
+    function today(){
+      var now = new Date();
+      return now.getFullYear()+'-'+fillZero(now.getMonth()+1)+'-'+fillZero(now.getDate());
+    };
+
+    function getDownloadsNpmUrl(name){
+      return 'https://api.npmjs.org/downloads/range/2013-01-03:'+today()+'/'+encodeURIComponent(name);
+    };
+
+    function getModuleDownloads(name){
+      //var url = 'https://api.npmjs.org/downloads/range/last-month/'+encodeURIComponent(name);
+      var url = getDownloadsNpmUrl(name);
+      return get(url);
+    };
+
+    function getModules(names){
+      var downloads = [];
+      names.forEach(function(name){
+        downloads.push(getModuleDownloads(name));
       });
+      return Promise.all(downloads);
     };
 
     return {
-      downloads: downloads,
+      downloads: getModuleDownloads,
+      modules: getModules
     };
   });
 
-  app.directive('userNpmModules', function(){
+  app.directive('userNpmModules', function(Npm){
     return {
       restrict: 'E',
       templateUrl: 'client/user-npm-modules.tpl.html',
@@ -78,6 +96,11 @@
           'url-graph',
           'repute'
         ];
+
+        Npm.modules($scope.modules)
+        .then(function(response){
+          console.log('Npm.modules:', response);
+        });
       }
     };
   });
@@ -89,11 +112,10 @@
       scope: { name: "="},
       controller: function($scope, $element){
         var anchor = angular.element($element).find('#downloads')[0];
-        console.log($scope.name);
 
         Npm.downloads($scope.name)
         .then(function(downloads){
-          console.log(downloads);
+          //console.log(downloads);
           Graphics.npm.downloads(anchor, downloads);
         })
         .catch(function(err){
