@@ -16,18 +16,31 @@
     });
   };
 
-  Graphics.npm.overview = function plot(anchor, all){
-    /*MG.data_graphic({
-          title: "Multi-Line Chart",
-          description: "This line chart contains multiple lines.",
-          data: data,
-          width: 600,
-          height: 200,
-          right: 40,
-          target: '#fake_users2',
-          legend: ['Line 1','Line 2','Line 3'],
-          legend_target: '.legend'
-      });*/
+  Graphics.npm.overview = function plot(anchor, modules){
+    console.log(anchor, modules);
+    var data = modules.map(function(module){
+      return MG.convert.date(module.downloads, 'day', '%Y-%m-%d');
+    });
+    var names = modules.map(function(module){
+      return module.package;
+    });
+
+    MG.data_graphic({
+      title: "modules",
+      area: true,
+      //chart_type: 'point',
+      //description: "This line chart contains multiple lines.",
+      data: data,
+      animate_on_load: true,
+      full_width: true,
+      height: 300,
+      target: anchor,
+      legend: names,
+      x_accessor: 'day',
+      y_accessor: 'downloads',
+      legend_target: '.legend',
+      //aggregate_rollover: true
+    });
   };
 
   var app = angular.module('app', ['ngMaterial']);
@@ -85,7 +98,7 @@
       restrict: 'E',
       templateUrl: 'client/user-npm-modules.tpl.html',
       scope: {},
-      controller: function($scope){
+      controller: function($scope, $element){
         $scope.modules = [
           'shape-json',
           'shape-array',
@@ -97,9 +110,10 @@
           'repute'
         ];
 
+        var overview = angular.element($element).find('#overview')[0];
         Npm.modules($scope.modules)
         .then(function(response){
-          console.log('Npm.modules:', response);
+          Graphics.npm.overview(overview, response);
         });
       }
     };
