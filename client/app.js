@@ -3,12 +3,9 @@
   Graphics.npm = {};
 
   Graphics.npm.downloads = function plot(anchor, info){
-    var data = info.downloads;
-    MG.convert.date(data, 'day', '%Y-%m-%d');
     MG.data_graphic({
       title: info.package,
-      //description: "dowloads of last month",
-      data: data,
+      data: info.downloads,
       full_width: true,
       target: anchor,
       x_accessor: 'day',
@@ -19,7 +16,7 @@
   Graphics.npm.overview = function plot(anchor, modules){
     console.log(anchor, modules);
     var data = modules.map(function(module){
-      return MG.convert.date(module.downloads, 'day', '%Y-%m-%d');
+      return module.downloads;
     });
     var names = modules.map(function(module){
       return module.package;
@@ -43,9 +40,26 @@
     });
   };
 
+  Graphics.npm.totalDownloads = function plot(anchor, downloads){
+    MG.data_graphic({
+      title: "Total Downloads by Day",
+      area: true,
+      //chart_type: 'point',
+      //description: "This line chart contains multiple lines.",
+      data: downloads,
+      animate_on_load: true,
+      full_width: true,
+      height: 300,
+      target: anchor,
+      x_accessor: 'day',
+      y_accessor: 'downloads',
+    });
+  };
+
   var app = angular.module('app', ['ngMaterial']);
 
   app.factory('Npm', function($http){
+    var modules = {};
 
     function get(url){
       return new Promise(function(resolve, reject){
@@ -74,9 +88,12 @@
     };
 
     function getModuleDownloads(name){
-      //var url = 'https://api.npmjs.org/downloads/range/last-month/'+encodeURIComponent(name);
       var url = getDownloadsNpmUrl(name);
-      return get(url);
+      return get(url)
+      .then(function(module){
+        MG.convert.date(module.downloads, 'day', '%Y-%m-%d');
+        return module;
+      });
     };
 
     function getModules(names){
@@ -84,12 +101,40 @@
       names.forEach(function(name){
         downloads.push(getModuleDownloads(name));
       });
-      return Promise.all(downloads);
+      return Promise.all(downloads)
+      .then(function(downloads){
+        downloads.forEach(function(module){
+          modules[module.package] = module;
+        });
+        return downloads;
+      });
+    };
+
+    function getModule(name){
+      return modules[name];
+    };
+
+    function totalDownloadsByDay(){
+      var downloads = _.reduce(_.values(modules), function(all, module){
+        return _.concat(all, module.downloads);
+      }, []);
+      var groupedByDay = _.groupBy(downloads, 'day');
+      var days = _.map(groupedByDay, function(group){
+        return {
+          day: group[0].day,
+          downloads: _.sumBy(group, 'downloads')
+        };
+      });
+      return days.sort(function(a, b){
+        return b.day-a.day;
+      });
     };
 
     return {
       downloads: getModuleDownloads,
-      modules: getModules
+      modules: getModules,
+      module: getModule,
+      totalDownloads: totalDownloadsByDay
     };
   });
 
@@ -109,11 +154,18 @@
           'url-graph',
           'repute'
         ];
+        $scope.loaded = false;
 
         var overview = angular.element($element).find('#overview')[0];
+        var total = angular.element($element).find('#total')[0];
         Npm.modules($scope.modules)
         .then(function(response){
           Graphics.npm.overview(overview, response);
+          var totalDownloads = Npm.totalDownloads();
+          Graphics.npm.totalDownloads(total, totalDownloads);
+          console.log('life cycle downloads: ', _.sumBy(totalDownloads, 'downloads'));
+          $scope.loaded = true;
+          $scope.$apply();
         });
       }
     };
@@ -123,18 +175,18 @@
     return {
       restrict: 'E',
       templateUrl: 'client/npm-module.tpl.html',
-      scope: { name: "="},
+      scope: { name: "=" },
       controller: function($scope, $element){
         var anchor = angular.element($element).find('#downloads')[0];
+        Graphics.npm.downloads(anchor, Npm.module($scope.name));
 
-        Npm.downloads($scope.name)
+        /*Npm.downloads($scope.name)
         .then(function(downloads){
-          //console.log(downloads);
           Graphics.npm.downloads(anchor, downloads);
         })
         .catch(function(err){
           console.log(err);
-        });
+        });*/
       }
     };
   });
