@@ -58,9 +58,7 @@
 
   var app = angular.module('app', ['ngMaterial']);
 
-  app.factory('Npm', function($http){
-    var modules = {};
-
+  app.factory('Request', function($http){
     function get(url){
       return new Promise(function(resolve, reject){
         $http({
@@ -74,71 +72,20 @@
       });
     };
 
-    function fillZero(number){
-      return (number<10) ? '0'+number : number;
-    };
-
-    function today(){
-      var now = new Date();
-      return now.getFullYear()+'-'+fillZero(now.getMonth()+1)+'-'+fillZero(now.getDate());
-    };
-
-    function getDownloadsNpmUrl(name){
-      return 'https://api.npmjs.org/downloads/range/2013-01-03:'+today()+'/'+encodeURIComponent(name);
-    };
-
-    function getModuleDownloads(name){
-      var url = getDownloadsNpmUrl(name);
-      return get(url)
-      .then(function(module){
-        MG.convert.date(module.downloads, 'day', '%Y-%m-%d');
-        return module;
-      });
-    };
-
-    function getModules(names){
-      var downloads = [];
-      names.forEach(function(name){
-        downloads.push(getModuleDownloads(name));
-      });
-      return Promise.all(downloads)
-      .then(function(downloads){
-        downloads.forEach(function(module){
-          modules[module.package] = module;
-        });
-        return downloads;
-      });
-    };
-
-    function getModule(name){
-      return modules[name];
-    };
-
-    function totalDownloadsByDay(){
-      var downloads = _.reduce(_.values(modules), function(all, module){
-        return _.concat(all, module.downloads);
-      }, []);
-      var groupedByDay = _.groupBy(downloads, 'day');
-      var days = _.map(groupedByDay, function(group){
-        return {
-          day: group[0].day,
-          downloads: _.sumBy(group, 'downloads')
-        };
-      });
-      return days.sort(function(a, b){
-        return b.day-a.day;
-      });
-    };
-
     return {
-      downloads: getModuleDownloads,
-      modules: getModules,
-      module: getModule,
-      totalDownloads: totalDownloadsByDay
+      get: get
     };
   });
 
-  app.directive('userNpmModules', function(Npm){
+  app.factory('Github', function(Request){
+    return github(Request);
+  });
+
+  app.factory('Npm', function(Request){
+    return npm(Request);
+  });
+
+  app.directive('userNpmModules', function(Npm, Github){
     return {
       restrict: 'E',
       templateUrl: 'client/user-npm-modules.tpl.html',
@@ -166,6 +113,14 @@
           console.log('life cycle downloads: ', _.sumBy(totalDownloads, 'downloads'));
           $scope.loaded = true;
           $scope.$apply();
+        });
+
+        Github.getCommitsOnRepository('ansteh', 'shape-json')
+        .then(function(response){
+          console.log(response);
+        })
+        .catch(function(err){
+          console.log(err);
         });
       }
     };
