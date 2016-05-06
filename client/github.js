@@ -15,11 +15,14 @@ var github = function(Request){
   };
 
   function promisify(func){
-    var get = function(instance){
-      if(_.isFunction(instance)){
-        return instance;
+    var curried = _.curry(func);
+
+    var get = function(param){
+      var result = curried(param);
+      if(_.isFunction(result)){
+        return result;
       } else {
-        return Request.get(instance);
+        return Request.get(result);
       }
     };
     var wrap = _.curry(func);
